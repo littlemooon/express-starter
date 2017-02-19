@@ -1,44 +1,26 @@
 import express from 'express'
-import morgan from 'morgan'
+import logger from 'morgan'
 import bodyParser from 'body-parser'
 
-import pg from './db/postgres'
+import initRoutes from './routes'
 
 const app = express()
 
-app.use(morgan('tiny'))
+const bodyLogger = where => (req, res, next) => {
+  console.log(`${where} -- BODY`, req.body)
+  next()
+}
+
+app.use(bodyLogger('before'))
+app.use(logger('dev'))
 app.use(bodyParser.json())
+app.use(bodyParser.urlencoded({ extended: false }))
+app.use(bodyLogger('after'))
 
-app.get('/', (req, res) => {
-  pg.manyOrNone('SELECT * FROM users')
-    .then(result => res.status(200).send(result))
-    .catch(e => res.status(500).send(e))
-})
+initRoutes(app)
 
-app.get('/:id', (req, res) => {
-  pg.one('SELECT * FROM users where id = $1', req.params.id)
-    .then(result => res.status(200).send(result))
-    .catch(e => res.status(500).send(e))
-})
-
-app.post('/', (req, res) => {
-  pg.none('INSERT INTO users (name) VALUES (${name})', req.body)
-    .then(result => res.status(200).send(result))
-    .catch(e => res.status(500).send(e))
-})
-
-app.put('/:id', (req, res) => {
-  pg.none('UPDATE users SET name=${name} where id=${id}', {...req.params, ...req.body})
-    .then(result => res.status(200).send(result))
-    .catch(e => res.status(500).send(e))
-})
-
-app.delete('/:id', (req, res) => {
-  pg.none('DELETE FROM users where id = $1', req.params.id)
-    .then(result => res.status(200).send(result))
-    .catch(e => res.status(500).send(e))
-})
-
-app.get('*', (req, res) => res.end('404 healthy'))
+app.get('*', (req, res) => res.status(200).send({
+  message: 'Welcome to the beginning of nothingness.',
+}))
 
 export default app
